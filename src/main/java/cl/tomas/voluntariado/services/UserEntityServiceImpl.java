@@ -1,9 +1,11 @@
 package cl.tomas.voluntariado.services;
 
+import cl.tomas.voluntariado.entities.Organization;
 import cl.tomas.voluntariado.entities.Role;
 import cl.tomas.voluntariado.entities.UserEntity;
 import cl.tomas.voluntariado.models.IUserEntity;
 import cl.tomas.voluntariado.models.UserEntityRequest;
+import cl.tomas.voluntariado.repositories.OrganizationRepository;
 import cl.tomas.voluntariado.repositories.RoleRepository;
 import cl.tomas.voluntariado.repositories.UserEntityRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,12 +21,14 @@ public class UserEntityServiceImpl implements UserEntityService {
 
     private final PasswordEncoder passwordEncoder;
     private final UserEntityRepository userEntityRepository;
+    private final OrganizationRepository organizationRepository;
     private final RoleRepository roleRepository;
 
-    public UserEntityServiceImpl(UserEntityRepository userEntityRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserEntityServiceImpl(UserEntityRepository userEntityRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder, OrganizationRepository organizationRepository) {
         this.userEntityRepository = userEntityRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.organizationRepository = organizationRepository;
     }
 
 
@@ -81,5 +85,44 @@ public class UserEntityServiceImpl implements UserEntityService {
     public void deleteById(Long id) {
         userEntityRepository.deleteById(id);
     }
+
+    public Optional<UserEntity> convertToOrganizer(Long userId, Long organizationId) {
+        // Buscar el usuario
+        Optional<UserEntity> userOptional = findById(userId);
+        if (userOptional.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // Buscar la organización
+        Optional<Organization> organizationOptional = organizationRepository.findById(organizationId);
+        if (organizationOptional.isEmpty()) {
+            return Optional.empty();
+        }
+
+        UserEntity user = userOptional.get();
+
+        // Actualizar la organización
+        user.setOrganization(organizationOptional.get());
+
+        // Actualizar roles: verificar si ya tiene el rol de ORGANIZADOR
+        Optional<Role> organizerRole = roleRepository.findByName("ORGANIZADOR");
+        if (organizerRole.isEmpty()) {
+            throw new IllegalStateException("El rol 'ORGANIZADOR' no está configurado en la base de datos");
+        }
+
+        // Agregar el rol de ORGANIZADOR si no lo tiene
+        if (!user.getRoles().contains(organizerRole.get())) {
+            user.getRoles().add(organizerRole.get());
+        }
+
+        // Guardar los cambios
+        return Optional.of(userEntityRepository.save(user));
+    }
+
+    @Override
+    public Optional<UserEntity> findByEmail(String email) {
+        return Optional.ofNullable(userEntityRepository.findByEmail(email));
+    }
+
 
 }

@@ -52,13 +52,16 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) authResult.getPrincipal();
         String email = user.getUsername();
         Collection<? extends GrantedAuthority> roles = authResult.getAuthorities();
+        boolean isVolunteer = roles.stream().anyMatch(role -> role.getAuthority().equals("ROLE_USER"));
         boolean isAdmin = roles.stream().anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN"));
         boolean isOrganizador = roles.stream().anyMatch(role -> role.getAuthority().equals("ROLE_ORGANIZADOR"));
 
         Claims claims = Jwts
                 .claims()
                 .add("authorities", new ObjectMapper().writeValueAsString(roles))
+
                 .add("email", email)
+                .add("isVolunteer", isVolunteer)
                 .add("isAdmin", isAdmin)
                 .add("isOrganizador", isOrganizador)
                 .build();

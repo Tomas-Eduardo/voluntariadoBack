@@ -1,5 +1,7 @@
 package cl.tomas.voluntariado.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -9,12 +11,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Entity
 @Table(name = "organizations")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "users", "events"})
 public class Organization {
 
     @Id
@@ -42,4 +47,14 @@ public class Organization {
     private String email;
 
     private String website;
+
+    @OneToMany(mappedBy = "organization", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<UserEntity> organizadores;
+
+    @OneToMany(mappedBy = "organizacion", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Event> eventos;
+
+
 }
